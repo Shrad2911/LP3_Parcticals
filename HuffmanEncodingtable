@@ -1,0 +1,154 @@
+# Online Python compiler (interpreter)
+# Write and run Python online using this editor
+import heapq
+
+class Node:
+    def __init__(self, char, freq):
+        self.char = char
+        self.freq = freq
+        self.left = None
+        self.right = None
+
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+def generate_huffman_codes(char_freqs):
+    heap = [Node(char, freq) for char, freq in char_freqs.items()]
+    heapq.heapify(heap)
+
+    while len(heap) > 1:
+        left = heapq.heappop(heap)
+        right = heapq.heappop(heap)
+        merged = Node(None, left.freq + right.freq)
+        merged.left = left
+        merged.right = right
+        heapq.heappush(heap, merged)
+
+    root = heap[0] if heap else None
+    huffman_codes = {}
+    
+    def traverse_tree(node, current_code):
+        if node is None:
+            return
+        if node.char is not None:
+            huffman_codes[node.char] = current_code
+            return
+        traverse_tree(node.left, current_code + "0")
+        traverse_tree(node.right, current_code + "1")
+
+    traverse_tree(root, "")
+    return huffman_codes
+
+if __name__ == "__main__":
+    input_table = {'a': 5, 'b': 9, 'c': 12, 'd': 13, 'e': 16, 'f': 45}
+    codes = generate_huffman_codes(input_table)
+    
+    print(f"{'Character':<10} | {'Frequency':<10} | {'Binary Code':<12}")
+    print("-" * 40)
+    for char, freq in input_table.items():
+        print(f"{char:<10} | {freq:<10} | {codes.get(char, ''):<12}")
+
+
+To keep the dry run easy to visualize, let's use a smaller sample input data table:
+data_table = {'a': 5, 'b': 9, 'c': 12}
+
+Phase 1: Building the Huffman Tree (build_huffman_tree)
+
+1. Initialization:
+	• Individual nodes are created: Node('a', 5), Node('b', 9), Node('c', 12).
+	• After heapify(), the heap structure arranges them sorted by priority: heap = [ Node('a', 5), Node('b', 9), Node('c', 12) ].
+2. Loop Iteration 1 (len(heap) is 3, which is > 1):
+	• Pop 1: left_node = Node('a', 5)
+	• Pop 2: right_node = Node('b', 9)
+	• Merge: Create a parent node merged = Node(None, 5 + 9 = 14). Link its left pointer to node a and right pointer to node b.
+	• Push: Push Node(None, 14) into the heap.
+	• Current Heap status: [ Node('c', 12), Node(None, 14) ] (sorted by lowest frequency first).
+3. Loop Iteration 2 (len(heap) is 2, which is > 1):
+	• Pop 1: left_node = Node('c', 12)
+	• Pop 2: right_node = Node(None, 14)
+	• Merge: Create a parent node merged = Node(None, 12 + 14 = 26). Link its left pointer to node c and right pointer to the internal node 14.
+	• Push: Push Node(None, 26) into the heap.
+	• Current Heap status: [ Node(None, 26) ].
+4. Loop Termination:
+	• while loop exits because len(heap) == 1.
+	• The function returns the root node Node(None, 26).
+       [None, 26]
+       /        \
+   0  /          \ 1
+  ['c', 12]    [None, 14]
+               /        \
+           0  /          \ 1
+          ['a', 5]     ['b', 9]
+
+Phase 2: Extracting Codes (generate_codes)
+
+We start at the root node [None, 26] with current_code = "".
+1. Call 1 (Root): Character is None → Traverse left: generate_codes(node_c, current_code="0").
+2. Call 2 (Node 'c'): Character is 'c'. It is a leaf node!
+	• Action: Save entry to map → codes_dict['c'] = "0". Returns back to root.
+3. Call 1 (Back at Root): Traverse right: generate_codes(node_14, current_code="1").
+4. Call 3 (Node 14): Character is None → Traverse left: generate_codes(node_a, current_code="10").
+5. Call 4 (Node 'a'): Character is 'a'. It is a leaf node!
+	• Action: Save entry to map → codes_dict['a'] = "10". Returns back to node 14.
+6. Call 3 (Back at Node 14): Traverse right: generate_codes(node_b, current_code="11").
+7. Call 5 (Node 'b'): Character is 'b'. It is a leaf node!
+	• Action: Save entry to map → codes_dict['b'] = "11".
+Final Output Dictionary Generated:
+python
+{'c': '0', 'a': '10', 'b': '11'
+Explanation: Imports Python’s built-in heapq module. This module provides a binary min-heap implementation, which is essential for the greedy strategy. It allows us to always extract the two smallest elements efficiently in \(O(\log n)\) time
+• class Node:: Defines a Blueprint for a tree node. Each node stores a char (character) and its freq (frequency).
+• self.left and self.right: Pointers to connect this node to its left and right children in the binary tree.
+• __lt__(self, other): Overloads the "less than" (<) operator. This tells the heapq module how to sort and compare two Node objects. It ensures that the min-heap arranges nodes solely based on their freq attribute.
+self represents the specific instance of the class that you are currently creating or operating on. It is used to access the attributes (variables) and methods (functions) belonging to that specific object.
+Think of a class as a blueprint and self as a pointer to the actual house built from that blueprint.
+When you define a class, it acts as a generic template. You can use that template to create dozens of unique objects. Python needs a way to know which object's data you are trying to read or change. self clarifies that.
+• heap = [...]: A list comprehension that iterates through your input dictionary (char_freqs) and wraps every key-value pair inside a new Node object.
+• heapq.heapify(heap): Converts the list of nodes into a valid min-heap structure in-place (O(n) time). The node with the smallest frequency is now at index 0.
+• while len(heap) > 1:: Runs continuously until only one single combined tree node remains in the heap.
+• left_node = heapq.heappop(heap): Pops out (removes and returns) the node with the lowest frequency currently in the heap.
+• right_node = heapq.heappop(heap): Pops out the next node, which has the second-lowest frequency.
+• merged = Node(None, ...): Creates an internal parent node. It holds no character (None), but its frequency is the sum of the two popped children.
+• merged.left = left_node / merged.right = right_node: Links the parent node to its two children, building the tree structure from the bottom up.
+• heapq.heappush(heap, merged): Pushes this newly combined node back into the min-heap so it can be combined with other nodes in subsequent loops.
+Explanation: Once the loop exits, the only remaining element in heap is the final root node of the fully assembled Huffman Tree. The function returns this root node.
+• Explanation: A recursive function that traverses the tree from the root down to the leaves. It tracks the binary path traveled using current_code. It initializes an empty dictionary codes_dict to store the final mappings.
+if root.char is not None:
+        codes_dict[root.char] = current_code
+Use code with caution.
+• Explanation: Because internal nodes have char = None, this condition only catches leaf nodes (actual characters). When it finds a leaf, it saves the accumulated current_code string for that character inside codes_dict
+• root.left, current_code + "0": Recursively explores the left subtree, appending a "0" to the binary path.
+• root.right, current_code + "1": Recursively explores the right subtree, appending a "1" to the binary path.
+• return codes_dict: Passes back the final dictionary containing characters mapped to their binary strings.
+
+Huffman Encoding is a popular algorithm used for lossless data compression. It reduces the size of data (like a text file) without losing a single bit of the original information.
+It works by assigning variable-length binary codes to characters based on how frequently they appear:
+• Frequent characters get shorter codes (fewer bits, e.g., e might become 0).
+• Rare characters get longer codes (more bits, e.g., z might become 11010).
+By using fewer bits for the characters we use most often, the total size of the file shrinks significantly.
+
+The Key Feature: Prefix Codes
+
+The Key Feature: Prefix Codes
+
+Huffman codes are prefix codes. This means no code is a prefix (the start) of any other code. For example, if A is 0, no other character's code will start with 0. This makes the encoded binary stream unique and completely unambiguous to decode back into text without needing spaces between characters.
+
+What is a Greedy Approach?
+
+A Greedy Approach is an algorithmic strategy used to solve optimization problems by making the locally optimal choice at each step, with the hope that these local choices will lead to a globally optimal solution.
+Think of it like a "short-sighted" strategy: you look only at the choices available right now, pick the best one immediately, and never reconsider or change your mind later.
+• you just make the best immediate choice at every step.
+Huffman Encoding relies completely on a greedy strategy to build its optimal tree structure. Here is how the greedy choice is made at every single step:
+
+Step	What the Greedy Strategy Does
+The Choice	It looks at all available characters/nodes and always picks the two with the absolute lowest frequencies.
+The Action	It merges those two smallest nodes into a single parent node.
+The Repeat	It places the new parent node back into the pile and repeats the exact same check until only one tree remains.
+
+Phase / Operation	Time Complexity	Space Complexity
+Heapify	\(\mathcal{O}(N)\)	\(\mathcal{O}(N)\)
+Tree Building (Loop)	\(\mathcal{O}(N \log N)\)	\(\mathcal{O}(N)\)
+Code Generation (DFS)	\(\mathcal{O}(N)\)	\(\mathcal{O}(H)\) (where H ≤ N)
+Total Complexity	\(\mathcal{O}(N \log N)\)	\(\mathcal{O}(N)\)
+
+
